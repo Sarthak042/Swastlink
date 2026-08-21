@@ -1,4 +1,4 @@
-# 🏥 SwasthLink (Swastlink)
+#  SwasthLink (Swastlink)
 
 > **Real-Time Healthcare Resource Allocation & Emergency Response Platform**
 
@@ -6,30 +6,30 @@ SwasthLink is a modern, full-stack healthcare ecosystem designed to bridge the g
 
 ---
 
-## 🌟 Key Features
+##  Key Features
 
-### 🚑 Emergency SOS & Interactive Map
+###  Emergency SOS & Interactive Map
 - **Live Location Tracking:** Uses Leaflet maps and the Haversine formula to compute exact distances to nearest emergency care centers.
 - **Instant SOS Dispatch:** One-tap emergency broadcast over Socket.io notifying nearby hospital emergency desks.
 
-### 🛏️ Hospital Bed Management & Real-Time Booking
+###  Hospital Bed Management & Real-Time Booking
 - **Live Bed Tracking:** Monitors availability across ICU, Oxygen, Ventilator, and General ward beds.
 - **Instant Booking Requests:** Reserve hospital beds with automated status tracking.
 - **QR Code Check-in:** Generates secure QR codes for verified booking verification upon hospital arrival.
 
-### 💊 Pharmacy Portal & Prescription Scanner
+###  Pharmacy Portal & Prescription Scanner
 - **Medicine Search:** Instant fuzzy search across local pharmacy inventories powered by Fuse.js.
 - **OCR Prescription Scanner:** Read and extract medicine names directly from uploaded prescription images using Tesseract.js.
 - **Real-Time Inventory Updates:** Enables pharmacies to manage stock levels and fulfill patient reservations.
 
-### 📊 Admin Analytics & Predictive Resource Forecasting
+###  Admin Analytics & Predictive Resource Forecasting
 - **Hospital Dashboard:** Real-time metrics on bed occupation, incoming patient requests, and pending SOS alerts.
 - **Demand Forecasting:** Algorithmic forecasting (`utils/forecast.js`) predicting future bed and resource requirements based on historical utilization data.
 - **Role-Based Access Control (RBAC):** Secure JWT authentication tailored for Patients, Hospital Admins, and Pharmacy Vendors.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### **Frontend (`/client`)**
 - **Framework:** React 18 + Vite
@@ -75,7 +75,7 @@ Swastlink/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - **Node.js**: v18.x or higher
@@ -162,7 +162,7 @@ npm run dev
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests to enhance features or optimize performance.
 
@@ -174,6 +174,6 @@ Contributions are welcome! Feel free to open issues or submit pull requests to e
 
 ---
 
-## 📜 License
+##  License
 
 Distributed under the **ISC License**. See `LICENSE` for more information.
