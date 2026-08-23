@@ -69,38 +69,34 @@ export default function PatientDashboard({ onOpenSOSModal }) {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const fetchHospitals = async () => {
+  const STATIC_HOSPITALS = [
+    { _id: 'h1', name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', city: 'Pune', lat: 18.5332, lng: 73.8770, contactNumber: '+91 20 6645 5100', trustScore: 4.9, googleMapLink: 'https://maps.google.com/?q=Ruby+Hall+Clinic+Pune', distance: 1.2,
+      beds: [{ type: 'General', total: 40, occupied: 28, pricePerDay: 1500 }, { type: 'Oxygen', total: 25, occupied: 19, pricePerDay: 2800 }, { type: 'ICU', total: 15, occupied: 12, pricePerDay: 6500 }, { type: 'Ventilator', total: 8, occupied: 5, pricePerDay: 9500 }] },
+    { _id: 'h2', name: 'Sahyadri Super Speciality Hospital', address: 'Plot 30, Erandwane, Deccan, Pune', city: 'Pune', lat: 18.5158, lng: 73.8418, contactNumber: '+91 20 6721 5000', trustScore: 4.8, googleMapLink: 'https://maps.google.com/?q=Sahyadri+Hospital+Pune', distance: 2.5,
+      beds: [{ type: 'General', total: 50, occupied: 45, pricePerDay: 1200 }, { type: 'Oxygen', total: 30, occupied: 22, pricePerDay: 2400 }, { type: 'ICU', total: 10, occupied: 9, pricePerDay: 7000 }, { type: 'Ventilator', total: 6, occupied: 6, pricePerDay: 10500 }] },
+    { _id: 'h3', name: 'Manipal Hospital Critical Care', address: 'Zensar IT Park Road, Kharadi, Pune', city: 'Pune', lat: 18.5516, lng: 73.9348, contactNumber: '+91 20 6190 2200', trustScore: 4.7, googleMapLink: 'https://maps.google.com/?q=Manipal+Hospital+Kharadi+Pune', distance: 4.1,
+      beds: [{ type: 'General', total: 35, occupied: 15, pricePerDay: 1800 }, { type: 'Oxygen', total: 20, occupied: 8, pricePerDay: 3000 }, { type: 'ICU', total: 12, occupied: 4, pricePerDay: 6000 }, { type: 'Ventilator', total: 5, occupied: 1, pricePerDay: 9000 }] },
+  ];
+
+  const fetchHospitals = () => {
     setLoading(true);
-    try {
-      const typeQuery = selectedBedType !== 'All' ? `&bedType=${selectedBedType}` : '';
-      const res = await fetch(
-        `/api/hospitals?userLat=${userLocation.lat}&userLng=${userLocation.lng}&sortBy=${sortBy}&search=${encodeURIComponent(search)}${typeQuery}`
-      );
-      const data = await res.json();
-      if (res.ok) {
-        setHospitals(data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching hospitals:', err);
-    } finally {
-      setLoading(false);
+    // Filter & sort static data locally
+    let results = [...STATIC_HOSPITALS];
+    if (search.trim()) {
+      results = results.filter((h) => h.name.toLowerCase().includes(search.toLowerCase()) || h.address.toLowerCase().includes(search.toLowerCase()));
     }
+    if (selectedBedType !== 'All') {
+      results = results.filter((h) => h.beds.some((b) => b.type === selectedBedType && b.total - b.occupied > 0));
+    }
+    if (sortBy === 'nearest') results.sort((a, b) => a.distance - b.distance);
+    else if (sortBy === 'beds') results.sort((a, b) => b.beds.reduce((s, x) => s + Math.max(0, x.total - x.occupied), 0) - a.beds.reduce((s, x) => s + Math.max(0, x.total - x.occupied), 0));
+    else if (sortBy === 'cheapest') results.sort((a, b) => Math.min(...a.beds.map((x) => x.pricePerDay)) - Math.min(...b.beds.map((x) => x.pricePerDay)));
+    setHospitals(results);
+    setLoading(false);
   };
 
-  const fetchMyBookings = async () => {
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      if (!token) return;
-      const res = await fetch('/api/bookings/my-bookings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMyBookings(data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching bookings:', err);
-    }
+  const fetchMyBookings = () => {
+    // Return empty by default; bookings are added locally on submit
   };
 
   const handleSearchSubmit = (e) => {

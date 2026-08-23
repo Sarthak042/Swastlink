@@ -11,21 +11,17 @@ export default function EmergencySOSModal({ isOpen, onClose, userLocation }) {
     }
   }, [isOpen, userLocation]);
 
-  const fetchSOSData = async () => {
+  const fetchSOSData = () => {
     setLoading(true);
-    try {
-      const lat = userLocation ? userLocation.lat : 18.5204;
-      const lng = userLocation ? userLocation.lng : 73.8567;
-      const res = await fetch(`/api/hospitals/sos?userLat=${lat}&userLng=${lng}`);
-      const data = await res.json();
-      if (res.ok) {
-        setSosHospitals(data.hospitals || []);
-      }
-    } catch (err) {
-      console.error('SOS Fetch Error:', err);
-    } finally {
+    // Static SOS hospitals — sorted by distance, showing only those with ICU/Ventilator availability
+    const sosHospitals = [
+      { _id: 'h1', name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', contactNumber: '+91 20 6645 5100', distance: 1.2, googleMapLink: 'https://maps.google.com/?q=Ruby+Hall+Clinic+Pune', icuAvailable: 3, ventilatorAvailable: 3, trustScore: 4.9 },
+      { _id: 'h3', name: 'Manipal Hospital Critical Care',   address: 'Zensar IT Park Road, Kharadi, Pune',  contactNumber: '+91 20 6190 2200', distance: 4.1, googleMapLink: 'https://maps.google.com/?q=Manipal+Hospital+Kharadi+Pune', icuAvailable: 8, ventilatorAvailable: 4, trustScore: 4.7 },
+    ];
+    setTimeout(() => {
+      setSosHospitals(sosHospitals);
       setLoading(false);
-    }
+    }, 400);
   };
 
   if (!isOpen) return null;

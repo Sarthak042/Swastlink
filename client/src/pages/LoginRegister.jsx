@@ -3,7 +3,7 @@ import { X, Activity, User, Building2, Pill, Lock, Mail, Phone, MapPin, Link2, C
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginRegister({ isOpen, onClose }) {
-  const { login } = useAuth();
+  const { signIn, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState('patient');
 
@@ -42,47 +42,36 @@ export default function LoginRegister({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const payload = isLogin
-      ? { email, password }
-      : {
-          name,
-          email,
-          password,
-          role,
-          hospitalName,
-          pharmacyName,
-          address,
-          city,
-          googleMapLink,
-          contactNumber,
-        };
-
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+    let result;
+    if (isLogin) {
+      result = signIn(email, password);
+    } else {
+      result = register({
+        name,
+        email,
+        password,
+        role,
+        hospitalName,
+        pharmacyName,
+        address,
+        city,
+        googleMapLink,
+        contactNumber,
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        login(data.user, data.token);
-        resetFields();
-        onClose();
-      } else {
-        setError(data.message || 'Authentication failed');
-      }
-    } catch (err) {
-      setError('Connection error: ' + err.message);
-    } finally {
-      setLoading(false);
     }
+
+    if (result.ok) {
+      resetFields();
+      onClose();
+    } else {
+      setError(result.message || 'Authentication failed');
+    }
+    setLoading(false);
   };
 
   // Determine background image based on selected role

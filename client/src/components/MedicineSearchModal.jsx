@@ -19,18 +19,22 @@ export default function MedicineSearchModal({ isOpen, onClose }) {
 
   const fetchMedicines = async () => {
     setLoading(true);
-    try {
-      const res = await fetch('/api/pharmacy/search');
-      const data = await res.json();
-      if (res.ok) {
-        setMedicines(data || []);
-        setFilteredMedicines(data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching medicines:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Static inventory — no database required
+    const staticMedicines = [
+      { _id: '1', name: 'Paracetamol 650mg (Dolo)', genericName: 'Paracetamol / Acetaminophen', quantity: 500, price: 32, requiresPrescription: false, pharmacy: { name: 'Apollo Pharmacy 24/7 (Kothrud)', distance: '1.2', contactNumber: '+91 20 2544 1122', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Apollo+Pharmacy+Kothrud+Pune' } },
+      { _id: '2', name: 'Azithromycin 500mg (Azithral)', genericName: 'Azithromycin', quantity: 120, price: 118, requiresPrescription: true, pharmacy: { name: 'Apollo Pharmacy 24/7 (Kothrud)', distance: '1.2', contactNumber: '+91 20 2544 1122', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Apollo+Pharmacy+Kothrud+Pune' } },
+      { _id: '3', name: 'Amoxicillin & Potassium Clavulanate 625mg', genericName: 'Augmentin / Amoxicillin', quantity: 85, price: 204, requiresPrescription: true, pharmacy: { name: 'Apollo Pharmacy 24/7 (Kothrud)', distance: '1.2', contactNumber: '+91 20 2544 1122', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Apollo+Pharmacy+Kothrud+Pune' } },
+      { _id: '4', name: 'Montelukast & Levocetirizine (Montek LC)', genericName: 'Montelukast / Levocetirizine', quantity: 210, price: 145, requiresPrescription: false, pharmacy: { name: 'Apollo Pharmacy 24/7 (Kothrud)', distance: '1.2', contactNumber: '+91 20 2544 1122', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Apollo+Pharmacy+Kothrud+Pune' } },
+      { _id: '5', name: 'Pantoprazole 40mg (Pan-40)', genericName: 'Pantoprazole', quantity: 340, price: 95, requiresPrescription: false, pharmacy: { name: 'Apollo Pharmacy 24/7 (Kothrud)', distance: '1.2', contactNumber: '+91 20 2544 1122', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Apollo+Pharmacy+Kothrud+Pune' } },
+      { _id: '6', name: 'Metformin 500mg (Glycomet)', genericName: 'Metformin Hydrochloride', quantity: 180, price: 55, requiresPrescription: true, pharmacy: { name: 'MedPlus Pharmacy (Deccan)', distance: '2.4', contactNumber: '+91 20 2567 8899', address: 'FC Road, Deccan Gymkhana, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=MedPlus+Deccan+Pune' } },
+      { _id: '7', name: 'Cetirizine 10mg (Zyrtec)', genericName: 'Cetirizine Hydrochloride', quantity: 450, price: 28, requiresPrescription: false, pharmacy: { name: 'MedPlus Pharmacy (Deccan)', distance: '2.4', contactNumber: '+91 20 2567 8899', address: 'FC Road, Deccan Gymkhana, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=MedPlus+Deccan+Pune' } },
+      { _id: '8', name: 'Omeprazole 20mg (Omez)', genericName: 'Omeprazole', quantity: 290, price: 72, requiresPrescription: false, pharmacy: { name: 'MedPlus Pharmacy (Deccan)', distance: '2.4', contactNumber: '+91 20 2567 8899', address: 'FC Road, Deccan Gymkhana, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=MedPlus+Deccan+Pune' } },
+      { _id: '9', name: 'Ibuprofen 400mg (Brufen)', genericName: 'Ibuprofen', quantity: 15, price: 42, requiresPrescription: false, pharmacy: { name: 'HealthZone Chemist (Kharadi)', distance: '4.1', contactNumber: '+91 20 6634 5500', address: 'Zensar IT Park Road, Kharadi, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Kharadi+Pharmacy+Pune' } },
+      { _id: '10', name: 'Atorvastatin 10mg (Lipitor)', genericName: 'Atorvastatin Calcium', quantity: 95, price: 138, requiresPrescription: true, pharmacy: { name: 'HealthZone Chemist (Kharadi)', distance: '4.1', contactNumber: '+91 20 6634 5500', address: 'Zensar IT Park Road, Kharadi, Pune', city: 'Pune', googleMapLink: 'https://maps.google.com/?q=Kharadi+Pharmacy+Pune' } },
+    ];
+    setMedicines(staticMedicines);
+    setFilteredMedicines(staticMedicines);
+    setLoading(false);
   };
 
   // Perform fuzzy search with Fuse.js when query changes

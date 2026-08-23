@@ -64,6 +64,37 @@ export default function AdminDashboard({ onOpenAuthModal }) {
   const [vaccineForm, setVaccineForm] = useState({ name: '', quantity: 50, price: 500 });
   const [vaccineModalOpen, setVaccineModalOpen] = useState(false);
 
+  // Static demo data for hospital admin — no backend needed
+  const STATIC_HOSPITAL = { name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', city: 'Pune' };
+  const STATIC_BEDS = [
+    { _id: 'b1', type: 'General',    total: 40, occupied: 28, pricePerDay: 1500 },
+    { _id: 'b2', type: 'Oxygen',     total: 25, occupied: 19, pricePerDay: 2800 },
+    { _id: 'b3', type: 'ICU',        total: 15, occupied: 12, pricePerDay: 6500 },
+    { _id: 'b4', type: 'Ventilator', total: 8,  occupied: 5,  pricePerDay: 9500 },
+  ];
+  const STATIC_VACCINES = [
+    { _id: 'v1', name: 'Covishield',   quantity: 150, price: 780  },
+    { _id: 'v2', name: 'Covaxin',      quantity: 90,  price: 1200 },
+    { _id: 'v3', name: 'Corbevax',     quantity: 60,  price: 400  },
+  ];
+  const STATIC_BOOKINGS = [
+    { _id: 'bk1', uniquePatientId: 'PAT-2026-9842', patientName: 'Rahul Sharma', patientPhone: '+91 99887 76655', bedType: 'ICU', status: 'pending', notes: 'Severe pneumonia, needs urgent oxygen and ICU monitoring.', createdAt: new Date().toISOString() },
+  ];
+  const STATIC_FORECAST = {
+    predictedPeakDay: 'Day 5',
+    utilizationRisk: 'HIGH',
+    historical: [
+      { day: 'Day -6', demand: 52 }, { day: 'Day -5', demand: 58 }, { day: 'Day -4', demand: 61 },
+      { day: 'Day -3', demand: 55 }, { day: 'Day -2', demand: 67 }, { day: 'Day -1', demand: 72 }, { day: 'Today', demand: 64 },
+    ],
+    forecast: [
+      { day: '1', projectedDemand: 70, capacity: 88 }, { day: '2', projectedDemand: 75, capacity: 88 },
+      { day: '3', projectedDemand: 79, capacity: 88 }, { day: '4', projectedDemand: 83, capacity: 88 },
+      { day: '5', projectedDemand: 91, capacity: 88 }, { day: '6', projectedDemand: 86, capacity: 88 },
+      { day: '7', projectedDemand: 80, capacity: 88 },
+    ],
+  };
+
   useEffect(() => {
     if (user && user.role === 'hospital_admin') {
       fetchAdminData();
@@ -73,153 +104,47 @@ export default function AdminDashboard({ onOpenAuthModal }) {
   useEffect(() => {
     if (lastBookingRequest) {
       setNewRequestAlert(true);
-      fetchAdminData();
     }
   }, [lastBookingRequest]);
 
-  const fetchAdminData = async () => {
+  const fetchAdminData = () => {
     setLoading(true);
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      if (!token) return;
-
-      // 1. Fetch user hospital
-      const profileRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const profile = await profileRes.json();
-      setHospital(profile.hospital);
-
-      if (profile.hospital) {
-        const hospId = profile.hospital.id;
-
-        // 2. Fetch Beds
-        const bedRes = await fetch(`/api/beds/hospital/${hospId}`);
-        const bedData = await bedRes.json();
-        setBeds(bedData || []);
-
-        // 3. Fetch Vaccines
-        const vacRes = await fetch(`/api/vaccines/hospital/${hospId}`);
-        const vacData = await vacRes.json();
-        setVaccines(vacData || []);
-
-        // 4. Fetch Bookings
-        const bookRes = await fetch('/api/bookings/hospital-requests', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const bookData = await bookRes.json();
-        setBookings(bookData || []);
-
-        // 5. Fetch ML Forecast Data
-        const fcRes = await fetch('/api/hospitals/forecast', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (fcRes.ok) {
-          const fcData = await fcRes.json();
-          setForecastData(fcData);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching admin data:', err);
-    } finally {
-      setLoading(false);
-    }
+    setHospital(STATIC_HOSPITAL);
+    setBeds(STATIC_BEDS);
+    setVaccines(STATIC_VACCINES);
+    setBookings(STATIC_BOOKINGS);
+    setForecastData(STATIC_FORECAST);
+    setLoading(false);
   };
 
-  const handleBedSubmit = async (e) => {
+  const handleBedSubmit = (e) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch('/api/beds/upsert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bedForm),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setBedModalOpen(false);
-        fetchAdminData();
-      } else {
-        alert(data.message || 'Failed to update bed inventory');
-      }
-    } catch (err) {
-      console.error('Error saving bed:', err);
-      alert('Connection error while updating bed inventory: ' + err.message);
+    if (editingBed) {
+      setBeds((prev) => prev.map((b) => b._id === editingBed._id ? { ...b, ...bedForm } : b));
+    } else {
+      setBeds((prev) => [...prev, { _id: 'b_' + Date.now(), ...bedForm }]);
     }
+    setBedModalOpen(false);
   };
 
-  const handleVaccineSubmit = async (e) => {
+  const handleVaccineSubmit = (e) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch('/api/vaccines/upsert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(vaccineForm),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setVaccineModalOpen(false);
-        setVaccineForm({ name: '', quantity: 50, price: 500 });
-        fetchAdminData();
-      } else {
-        alert(data.message || 'Failed to update vaccine stock');
-      }
-    } catch (err) {
-      console.error('Error saving vaccine:', err);
-      alert('Connection error while updating vaccine: ' + err.message);
-    }
+    setVaccines((prev) => {
+      const exists = prev.find((v) => v.name === vaccineForm.name);
+      if (exists) return prev.map((v) => v.name === vaccineForm.name ? { ...v, ...vaccineForm } : v);
+      return [...prev, { _id: 'v_' + Date.now(), ...vaccineForm }];
+    });
+    setVaccineModalOpen(false);
+    setVaccineForm({ name: '', quantity: 50, price: 500 });
   };
 
-  const handleVaccineDelete = async (vacId) => {
+  const handleVaccineDelete = (vacId) => {
     if (!window.confirm('Are you sure you want to delete this vaccine stock entry?')) return;
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch(`/api/vaccines/${vacId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        fetchAdminData();
-      } else {
-        alert(data.message || 'Failed to delete vaccine stock');
-      }
-    } catch (err) {
-      console.error('Error deleting vaccine:', err);
-      alert('Connection error while deleting vaccine: ' + err.message);
-    }
+    setVaccines((prev) => prev.filter((v) => v._id !== vacId));
   };
 
-  const handleBookingAction = async (bookingId, status) => {
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch(`/api/bookings/${bookingId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (res.ok) {
-        fetchAdminData();
-      }
-    } catch (err) {
-      console.error('Error updating booking:', err);
-    }
+  const handleBookingAction = (bookingId, status) => {
+    setBookings((prev) => prev.map((b) => b._id === bookingId ? { ...b, status } : b));
   };
 
   // Chart Data Preparation

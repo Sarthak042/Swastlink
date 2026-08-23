@@ -10,8 +10,7 @@ export const SocketProvider = ({ children }) => {
   const [lastBookingStatusChange, setLastBookingStatusChange] = useState(null);
 
   useEffect(() => {
-    // Target backend port 5000 directly or via origin proxy
-    const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin;
+    const socketUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://swastlink-api.onrender.com');
 
     const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],

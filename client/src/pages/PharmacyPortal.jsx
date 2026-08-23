@@ -48,23 +48,20 @@ export default function PharmacyPortal({ onOpenAuthModal }) {
     }
   }, [user]);
 
-  const fetchInventory = async () => {
+  const fetchInventory = () => {
     setLoading(true);
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch('/api/pharmacy/inventory', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPharmacy(data.pharmacy);
-        setMedicines(data.medicines || []);
-      }
-    } catch (err) {
-      console.error('Error fetching pharmacy inventory:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Static inventory — no database required
+    const staticPharmacy = { name: 'Apollo Pharmacy 24/7 (Kothrud)', address: 'Shop 4, Karve Road, Kothrud, Pune', city: 'Pune' };
+    const staticMedicines = [
+      { _id: '1', name: 'Paracetamol 650mg (Dolo)', genericName: 'Paracetamol / Acetaminophen', quantity: 500, price: 32, expiryDate: '2027-08-31', requiresPrescription: false },
+      { _id: '2', name: 'Azithromycin 500mg (Azithral)', genericName: 'Azithromycin', quantity: 120, price: 118, expiryDate: '2026-11-30', requiresPrescription: true },
+      { _id: '3', name: 'Amoxicillin & Potassium Clavulanate 625mg', genericName: 'Augmentin / Amoxicillin', quantity: 85, price: 204, expiryDate: '2026-09-15', requiresPrescription: true },
+      { _id: '4', name: 'Montelukast & Levocetirizine (Montek LC)', genericName: 'Montelukast / Levocetirizine', quantity: 210, price: 145, expiryDate: '2027-05-20', requiresPrescription: false },
+      { _id: '5', name: 'Pantoprazole 40mg (Pan-40)', genericName: 'Pantoprazole', quantity: 340, price: 95, expiryDate: '2027-10-10', requiresPrescription: false },
+    ];
+    setPharmacy(staticPharmacy);
+    setMedicines(staticMedicines);
+    setLoading(false);
   };
 
   const handleOpenNewModal = () => {
@@ -95,52 +92,24 @@ export default function PharmacyPortal({ onOpenAuthModal }) {
     setModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch('/api/pharmacy/medicine', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setModalOpen(false);
-        fetchInventory();
-      } else {
-        alert(data.message || 'Error saving medicine');
-      }
-    } catch (err) {
-      console.error('Error saving medicine:', err);
-      alert('Connection error saving medicine: ' + err.message);
+    if (editingMedicine) {
+      // Update existing medicine in local state
+      setMedicines((prev) =>
+        prev.map((m) => (m._id === form.id ? { ...m, ...form, _id: m._id } : m))
+      );
+    } else {
+      // Add new medicine to local state
+      const newMed = { ...form, _id: Date.now().toString() };
+      setMedicines((prev) => [...prev, newMed]);
     }
+    setModalOpen(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (!window.confirm('Are you sure you want to delete this medicine from your catalog?')) return;
-
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch(`/api/pharmacy/medicine/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        fetchInventory();
-      } else {
-        const data = await res.json();
-        alert(data.message || 'Error deleting medicine');
-      }
-    } catch (err) {
-      console.error('Error deleting medicine:', err);
-      alert('Connection error deleting medicine: ' + err.message);
-    }
+    setMedicines((prev) => prev.filter((m) => m._id !== id));
   };
 
   if (!user || user.role !== 'pharmacy_admin') {

@@ -15,7 +15,7 @@ export default function BedRequestModal({ isOpen, onClose, hospital, onBookingSu
 
   const availableBeds = hospital.beds || [];
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!user) {
       setError('Please sign in or create a new account to submit a request.');
@@ -25,35 +25,26 @@ export default function BedRequestModal({ isOpen, onClose, hospital, onBookingSu
     setLoading(true);
     setError('');
 
-    try {
-      const token = localStorage.getItem('swasthlink_token');
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          hospitalId: hospital._id,
-          bedType,
-          patientName,
-          patientPhone,
-          notes,
-        }),
-      });
+    // Create booking locally — no backend needed
+    const booking = {
+      _id: 'bk_' + Date.now(),
+      uniquePatientId: 'PAT-2026-' + Math.floor(Math.random() * 9000 + 1000),
+      hospitalId: hospital._id,
+      hospitalName: hospital.name,
+      bedType,
+      patientName,
+      patientPhone,
+      notes,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      qrData: JSON.stringify({ hospital: hospital.name, bedType, patientName, patientPhone, ts: Date.now() }),
+    };
 
-      const data = await res.json();
-      if (res.ok) {
-        onBookingSuccess(data.booking);
-        onClose();
-      } else {
-        setError(data.message || 'Failed to submit request');
-      }
-    } catch (err) {
-      setError('Connection error: ' + err.message);
-    } finally {
+    setTimeout(() => {
+      onBookingSuccess(booking);
+      onClose();
       setLoading(false);
-    }
+    }, 500);
   };
 
   return (
