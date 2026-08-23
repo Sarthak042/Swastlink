@@ -121,9 +121,32 @@ export default function AdminDashboard({ onOpenAuthModal }) {
     },
   };
 
-  // Default fallback if email doesn't match
-  const DEFAULT_DATA = HOSPITAL_DATA['admin@rubyhall.com'];
-  const adminData = user ? (HOSPITAL_DATA[user.email] || DEFAULT_DATA) : DEFAULT_DATA;
+  // Build hospital data from user's own registration info (for newly signed-up admins)
+  const buildUserHospital = (u) => ({
+    hospital: {
+      name:    u.hospitalName || u.name || 'My Hospital',
+      address: u.address      || '',
+      city:    u.city         || '',
+    },
+    beds: [
+      { _id: 'nb1', type: 'General',    total: 20, occupied: 0, pricePerDay: 1500 },
+      { _id: 'nb2', type: 'Oxygen',     total: 10, occupied: 0, pricePerDay: 2500 },
+      { _id: 'nb3', type: 'ICU',        total: 5,  occupied: 0, pricePerDay: 6000 },
+      { _id: 'nb4', type: 'Ventilator', total: 3,  occupied: 0, pricePerDay: 9000 },
+    ],
+    vaccines: [],
+    forecast: {
+      predictedPeakDay: 'Day 4', utilizationRisk: 'LOW',
+      historical: [{ day: 'Day -6', demand: 0 }, { day: 'Day -5', demand: 0 }, { day: 'Day -4', demand: 0 }, { day: 'Day -3', demand: 0 }, { day: 'Day -2', demand: 0 }, { day: 'Day -1', demand: 0 }, { day: 'Today', demand: 0 }],
+      forecast:  [{ day: '1', projectedDemand: 2, capacity: 38 }, { day: '2', projectedDemand: 3, capacity: 38 }, { day: '3', projectedDemand: 4, capacity: 38 }, { day: '4', projectedDemand: 5, capacity: 38 }, { day: '5', projectedDemand: 4, capacity: 38 }, { day: '6', projectedDemand: 3, capacity: 38 }, { day: '7', projectedDemand: 2, capacity: 38 }],
+    },
+  });
+
+  // Pick data: preset email map first, then user's own registration data
+  const adminData = user
+    ? (HOSPITAL_DATA[user.email] || buildUserHospital(user))
+    : HOSPITAL_DATA['admin@rubyhall.com'];
+
   const STATIC_BOOKINGS = [
     { _id: 'bk1', uniquePatientId: 'PAT-2026-9842', patientName: 'Rahul Sharma', patientPhone: '+91 99887 76655', bedType: 'ICU', status: 'pending', notes: 'Severe pneumonia, needs urgent ICU monitoring.', createdAt: new Date().toISOString() },
   ];
