@@ -19,6 +19,36 @@ const saveRegisteredUsers = (users) => {
   sessionStorage.setItem('swasthlink_users', JSON.stringify(users));
 };
 
+// ── Shared hospital registry — visible to all patients ────────────────────────
+export const getRegisteredHospitals = () => {
+  try { return JSON.parse(sessionStorage.getItem('swasthlink_hospitals') || '[]'); } catch { return []; }
+};
+const saveHospital = (user) => {
+  if (user.role !== 'hospital_admin' || !user.hospitalName) return;
+  const existing = getRegisteredHospitals();
+  // avoid duplicates
+  if (existing.find((h) => h.adminEmail === user.email)) return;
+  const newHospital = {
+    _id: 'h_' + user._id,
+    adminEmail: user.email,
+    name: user.hospitalName,
+    address: user.address || '',
+    city: user.city || '',
+    contactNumber: user.contactNumber || '',
+    googleMapLink: user.googleMapLink || '',
+    lat: 18.5204, lng: 73.8567, // default Pune coords
+    trustScore: 4.5,
+    distance: 5.0,
+    beds: [
+      { type: 'General',    total: 20, occupied: 0, pricePerDay: 1500 },
+      { type: 'Oxygen',     total: 10, occupied: 0, pricePerDay: 2500 },
+      { type: 'ICU',        total: 5,  occupied: 0, pricePerDay: 6000 },
+      { type: 'Ventilator', total: 3,  occupied: 0, pricePerDay: 9000 },
+    ],
+  };
+  sessionStorage.setItem('swasthlink_hospitals', JSON.stringify([...existing, newHospital]));
+};
+
 const makeToken = (user) => btoa(JSON.stringify({ id: user._id, role: user.role, exp: Date.now() + 86400000 }));
 
 export const AuthProvider = ({ children }) => {
@@ -78,6 +108,8 @@ export const AuthProvider = ({ children }) => {
     const newUser = { _id: 'u_' + Date.now(), ...userData };
     const registered = getRegisteredUsers();
     saveRegisteredUsers([...registered, newUser]);
+    // If hospital admin, publish their hospital to the shared registry for patients
+    saveHospital(newUser);
     const { password: _, ...safe } = newUser;
     const tok = makeToken(newUser);
     login(safe, tok);

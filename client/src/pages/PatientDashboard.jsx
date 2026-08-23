@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, SlidersHorizontal, Map, List, BedDouble, Syringe, Phone, CheckCircle2, AlertCircle, ArrowUpDown, Clock, Sparkles } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, getRegisteredHospitals } from '../context/AuthContext';
 import HospitalMap from '../components/HospitalMap';
 import BedRequestModal from '../components/BedRequestModal';
 import QRCodeModal from '../components/QRCodeModal';
@@ -134,11 +134,18 @@ export default function PatientDashboard({ onOpenSOSModal }) {
   const fetchHospitals = (overrideSearch) => {
     setLoading(true);
     const q = overrideSearch !== undefined ? overrideSearch : search;
-    let results = [...STATIC_HOSPITALS];
+    // Merge static + dynamically registered hospitals (dedup by _id)
+    const registered = getRegisteredHospitals();
+    const allHospitals = [
+      ...STATIC_HOSPITALS,
+      ...registered.filter((r) => !STATIC_HOSPITALS.find((s) => s._id === r._id)),
+    ];
+    let results = [...allHospitals];
     if (q.trim()) {
       results = results.filter((h) =>
         h.name.toLowerCase().includes(q.toLowerCase()) ||
-        h.address.toLowerCase().includes(q.toLowerCase())
+        h.address.toLowerCase().includes(q.toLowerCase()) ||
+        (h.city || '').toLowerCase().includes(q.toLowerCase())
       );
     }
     if (selectedBedType !== 'All') {
