@@ -23,20 +23,32 @@ export default function Navbar({ activeTab, setActiveTab, onOpenAuthModal, onOpe
 
         {/* Tab Navigation */}
         <nav className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
-                activeTab === id
-                  ? 'bg-emerald-500 text-white shadow'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
+          {tabs.map(({ id, label, icon: Icon }) => {
+            // Determine if this tab is accessible for the current user
+            const isAllowed =
+              !user ||                                                     // logged out → all tabs visible
+              (id === 'patient' && user.role === 'patient') ||            // patients → patient only
+              (id === 'admin'   && user.role === 'hospital_admin') ||     // hospital admins → admin only
+              (id === 'pharmacy'&& user.role === 'pharmacy_admin');       // pharmacy admins → pharmacy only
+
+            return (
+              <button
+                key={id}
+                onClick={() => isAllowed && setActiveTab(id)}
+                title={!isAllowed ? `Only accessible to ${id === 'admin' ? 'Hospital Admin' : id === 'pharmacy' ? 'Pharmacy Admin' : 'Patient'} accounts` : ''}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                  activeTab === id
+                    ? 'bg-emerald-500 text-white shadow'
+                    : isAllowed
+                    ? 'text-slate-400 hover:text-white hover:bg-slate-700'
+                    : 'text-slate-600 cursor-not-allowed opacity-40'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* Action Buttons */}

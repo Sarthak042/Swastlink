@@ -64,36 +64,69 @@ export default function AdminDashboard({ onOpenAuthModal }) {
   const [vaccineForm, setVaccineForm] = useState({ name: '', quantity: 50, price: 500 });
   const [vaccineModalOpen, setVaccineModalOpen] = useState(false);
 
-  // Static demo data for hospital admin — no backend needed
-  const STATIC_HOSPITAL = { name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', city: 'Pune' };
-  const STATIC_BEDS = [
-    { _id: 'b1', type: 'General',    total: 40, occupied: 28, pricePerDay: 1500 },
-    { _id: 'b2', type: 'Oxygen',     total: 25, occupied: 19, pricePerDay: 2800 },
-    { _id: 'b3', type: 'ICU',        total: 15, occupied: 12, pricePerDay: 6500 },
-    { _id: 'b4', type: 'Ventilator', total: 8,  occupied: 5,  pricePerDay: 9500 },
-  ];
-  const STATIC_VACCINES = [
-    { _id: 'v1', name: 'Covishield',   quantity: 150, price: 780  },
-    { _id: 'v2', name: 'Covaxin',      quantity: 90,  price: 1200 },
-    { _id: 'v3', name: 'Corbevax',     quantity: 60,  price: 400  },
-  ];
-  const STATIC_BOOKINGS = [
-    { _id: 'bk1', uniquePatientId: 'PAT-2026-9842', patientName: 'Rahul Sharma', patientPhone: '+91 99887 76655', bedType: 'ICU', status: 'pending', notes: 'Severe pneumonia, needs urgent oxygen and ICU monitoring.', createdAt: new Date().toISOString() },
-  ];
-  const STATIC_FORECAST = {
-    predictedPeakDay: 'Day 5',
-    utilizationRisk: 'HIGH',
-    historical: [
-      { day: 'Day -6', demand: 52 }, { day: 'Day -5', demand: 58 }, { day: 'Day -4', demand: 61 },
-      { day: 'Day -3', demand: 55 }, { day: 'Day -2', demand: 67 }, { day: 'Day -1', demand: 72 }, { day: 'Today', demand: 64 },
-    ],
-    forecast: [
-      { day: '1', projectedDemand: 70, capacity: 88 }, { day: '2', projectedDemand: 75, capacity: 88 },
-      { day: '3', projectedDemand: 79, capacity: 88 }, { day: '4', projectedDemand: 83, capacity: 88 },
-      { day: '5', projectedDemand: 91, capacity: 88 }, { day: '6', projectedDemand: 86, capacity: 88 },
-      { day: '7', projectedDemand: 80, capacity: 88 },
-    ],
+  // Per-admin hospital data — keyed by email
+  const HOSPITAL_DATA = {
+    'admin@rubyhall.com': {
+      hospital: { name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', city: 'Pune' },
+      beds: [
+        { _id: 'b1', type: 'General',    total: 40, occupied: 28, pricePerDay: 1500 },
+        { _id: 'b2', type: 'Oxygen',     total: 25, occupied: 19, pricePerDay: 2800 },
+        { _id: 'b3', type: 'ICU',        total: 15, occupied: 12, pricePerDay: 6500 },
+        { _id: 'b4', type: 'Ventilator', total: 8,  occupied: 5,  pricePerDay: 9500 },
+      ],
+      vaccines: [
+        { _id: 'v1', name: 'Covishield', quantity: 150, price: 780  },
+        { _id: 'v2', name: 'Covaxin',    quantity: 90,  price: 1200 },
+        { _id: 'v3', name: 'Corbevax',   quantity: 60,  price: 400  },
+      ],
+      forecast: { predictedPeakDay: 'Day 5', utilizationRisk: 'HIGH',
+        historical: [{ day: 'Day -6', demand: 52 }, { day: 'Day -5', demand: 58 }, { day: 'Day -4', demand: 61 }, { day: 'Day -3', demand: 55 }, { day: 'Day -2', demand: 67 }, { day: 'Day -1', demand: 72 }, { day: 'Today', demand: 64 }],
+        forecast: [{ day: '1', projectedDemand: 70, capacity: 88 }, { day: '2', projectedDemand: 75, capacity: 88 }, { day: '3', projectedDemand: 79, capacity: 88 }, { day: '4', projectedDemand: 83, capacity: 88 }, { day: '5', projectedDemand: 91, capacity: 88 }, { day: '6', projectedDemand: 86, capacity: 88 }, { day: '7', projectedDemand: 80, capacity: 88 }],
+      },
+    },
+    'admin@sahyadri.com': {
+      hospital: { name: 'Sahyadri Super Speciality Hospital', address: 'Plot 30, Erandwane, Deccan, Pune', city: 'Pune' },
+      beds: [
+        { _id: 'b5', type: 'General',    total: 50, occupied: 45, pricePerDay: 1200 },
+        { _id: 'b6', type: 'Oxygen',     total: 30, occupied: 22, pricePerDay: 2400 },
+        { _id: 'b7', type: 'ICU',        total: 10, occupied: 9,  pricePerDay: 7000 },
+        { _id: 'b8', type: 'Ventilator', total: 6,  occupied: 6,  pricePerDay: 10500 },
+      ],
+      vaccines: [
+        { _id: 'v4', name: 'Covaxin',    quantity: 200, price: 1200 },
+        { _id: 'v5', name: 'Influenza',  quantity: 80,  price: 600  },
+      ],
+      forecast: { predictedPeakDay: 'Day 3', utilizationRisk: 'HIGH',
+        historical: [{ day: 'Day -6', demand: 68 }, { day: 'Day -5', demand: 72 }, { day: 'Day -4', demand: 75 }, { day: 'Day -3', demand: 70 }, { day: 'Day -2', demand: 80 }, { day: 'Day -1', demand: 85 }, { day: 'Today', demand: 82 }],
+        forecast: [{ day: '1', projectedDemand: 85, capacity: 96 }, { day: '2', projectedDemand: 88, capacity: 96 }, { day: '3', projectedDemand: 95, capacity: 96 }, { day: '4', projectedDemand: 90, capacity: 96 }, { day: '5', projectedDemand: 84, capacity: 96 }, { day: '6', projectedDemand: 78, capacity: 96 }, { day: '7', projectedDemand: 72, capacity: 96 }],
+      },
+    },
+    'admin@manipal.com': {
+      hospital: { name: 'Manipal Hospital Critical Care', address: 'Zensar IT Park Road, Kharadi, Pune', city: 'Pune' },
+      beds: [
+        { _id: 'b9',  type: 'General',    total: 35, occupied: 15, pricePerDay: 1800 },
+        { _id: 'b10', type: 'Oxygen',     total: 20, occupied: 8,  pricePerDay: 3000 },
+        { _id: 'b11', type: 'ICU',        total: 12, occupied: 4,  pricePerDay: 6000 },
+        { _id: 'b12', type: 'Ventilator', total: 5,  occupied: 1,  pricePerDay: 9000 },
+      ],
+      vaccines: [
+        { _id: 'v6', name: 'Covishield', quantity: 120, price: 780 },
+        { _id: 'v7', name: 'Corbevax',   quantity: 90,  price: 400 },
+        { _id: 'v8', name: 'Rotavac',    quantity: 45,  price: 950 },
+      ],
+      forecast: { predictedPeakDay: 'Day 6', utilizationRisk: 'LOW',
+        historical: [{ day: 'Day -6', demand: 30 }, { day: 'Day -5', demand: 35 }, { day: 'Day -4', demand: 32 }, { day: 'Day -3', demand: 28 }, { day: 'Day -2', demand: 33 }, { day: 'Day -1', demand: 38 }, { day: 'Today', demand: 28 }],
+        forecast: [{ day: '1', projectedDemand: 32, capacity: 72 }, { day: '2', projectedDemand: 35, capacity: 72 }, { day: '3', projectedDemand: 38, capacity: 72 }, { day: '4', projectedDemand: 40, capacity: 72 }, { day: '5', projectedDemand: 42, capacity: 72 }, { day: '6', projectedDemand: 45, capacity: 72 }, { day: '7', projectedDemand: 41, capacity: 72 }],
+      },
+    },
   };
+
+  // Default fallback if email doesn't match
+  const DEFAULT_DATA = HOSPITAL_DATA['admin@rubyhall.com'];
+  const adminData = user ? (HOSPITAL_DATA[user.email] || DEFAULT_DATA) : DEFAULT_DATA;
+  const STATIC_BOOKINGS = [
+    { _id: 'bk1', uniquePatientId: 'PAT-2026-9842', patientName: 'Rahul Sharma', patientPhone: '+91 99887 76655', bedType: 'ICU', status: 'pending', notes: 'Severe pneumonia, needs urgent ICU monitoring.', createdAt: new Date().toISOString() },
+  ];
 
   useEffect(() => {
     if (user && user.role === 'hospital_admin') {
@@ -109,11 +142,11 @@ export default function AdminDashboard({ onOpenAuthModal }) {
 
   const fetchAdminData = () => {
     setLoading(true);
-    setHospital(STATIC_HOSPITAL);
-    setBeds(STATIC_BEDS);
-    setVaccines(STATIC_VACCINES);
+    setHospital(adminData.hospital);
+    setBeds(adminData.beds);
+    setVaccines(adminData.vaccines);
     setBookings(STATIC_BOOKINGS);
-    setForecastData(STATIC_FORECAST);
+    setForecastData(adminData.forecast);
     setLoading(false);
   };
 

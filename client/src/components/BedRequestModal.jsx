@@ -83,7 +83,7 @@ export default function BedRequestModal({ isOpen, onClose, hospital, onBookingSu
             <div className="grid grid-cols-2 gap-2">
               {['General', 'Oxygen', 'ICU', 'Ventilator'].map((type) => {
                 const bedObj = availableBeds.find((b) => b.type === type);
-                const count = bedObj ? bedObj.available : 0;
+                const count = bedObj ? Math.max(0, bedObj.total - bedObj.occupied) : 0;
                 const price = bedObj ? bedObj.pricePerDay : 0;
                 const isAvailable = count > 0;
 
