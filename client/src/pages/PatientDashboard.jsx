@@ -27,6 +27,22 @@ export default function PatientDashboard({ onOpenSOSModal }) {
   // Load hospitals on mount and whenever filters change
   useEffect(() => { fetchHospitals(); }, [sortBy, selectedBedType]);
 
+  // Listen for localStorage changes from OTHER tabs (e.g. hospital admin just registered)
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === 'swasthlink_hospitals') {
+        fetchHospitals();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    // Also poll every 3 seconds as a safety net (catches same-tab registrations)
+    const interval = setInterval(() => { fetchHospitals(); }, 3000);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
+  }, [sortBy, selectedBedType, search]);
+
   // Real-time socket updates
   useEffect(() => {
     if (lastInventoryUpdate) {
