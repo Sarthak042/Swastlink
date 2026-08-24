@@ -50,26 +50,13 @@ export default function PatientDashboard({ onOpenSOSModal }) {
     setLoading(true);
     setApiError('');
     try {
+      // /api/hospitals returns hospitals WITH beds already embedded — one call is enough
       const res = await fetch(`${API}/hospitals`);
-      if (!res.ok) throw new Error('Server error');
+      if (!res.ok) throw new Error('Server error ' + res.status);
       const data = await res.json();
-      // data is array of hospitals, each with beds[] embedded or fetched separately
-      const hospitals = Array.isArray(data) ? data : (data.hospitals || []);
-      // Fetch beds for each hospital
-      const enriched = await Promise.all(
-        hospitals.map(async (h) => {
-          try {
-            const bedRes = await fetch(`${API}/beds/hospital/${h._id}`);
-            const beds = bedRes.ok ? await bedRes.json() : [];
-            return { ...h, beds: Array.isArray(beds) ? beds : [] };
-          } catch {
-            return { ...h, beds: [] };
-          }
-        })
-      );
-      setHospitals(enriched);
+      setHospitals(Array.isArray(data) ? data : (data.hospitals || []));
     } catch (err) {
-      setApiError('Could not load hospitals. The server may be waking up — please wait 30 seconds and refresh.');
+      setApiError('Could not load hospitals. Server may be waking up — please wait 30 seconds and tap "Try Again".');
     } finally {
       setLoading(false);
     }
