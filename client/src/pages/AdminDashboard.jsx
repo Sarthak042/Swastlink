@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, BedDouble, Syringe, Users, CheckCircle2, XCircle, Plus, Edit2, Trash2, AlertCircle, BarChart3, Bell, TrendingUp, Download } from 'lucide-react';
+import { Building2, BedDouble, Syringe, Users, CheckCircle2, XCircle, Plus, Edit2, Trash2, AlertCircle, BarChart3, Bell, TrendingUp, Download, Loader2 } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 
+const API = 'https://swastlink-api.onrender.com/api';
+
 export default function AdminDashboard({ onOpenAuthModal }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { lastBookingRequest } = useSocket();
 
   const [hospital, setHospital] = useState(null);
@@ -14,15 +16,16 @@ export default function AdminDashboard({ onOpenAuthModal }) {
   const [bookings, setBookings] = useState([]);
   const [forecastData, setForecastData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const [newRequestAlert, setNewRequestAlert] = useState(false);
 
+  const authHeader = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
   const exportCSV = (filename, headers, rows) => {
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
+    const csvContent = 'data:text/csv;charset=utf-8,' +
       [headers.join(','), ...rows.map((row) => row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', encodeURI(csvContent));
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
@@ -30,157 +33,40 @@ export default function AdminDashboard({ onOpenAuthModal }) {
   };
 
   const exportBedsToCSV = () => {
-    const headers = ['Bed Category', 'Total Capacity', 'Occupied Beds', 'Available Beds', 'Price Per Day (INR)', 'Occupancy Rate (%)'];
-    const rows = beds.map((b) => [
-      b.type,
-      b.total,
-      b.occupied,
-      Math.max(0, b.total - b.occupied),
-      b.pricePerDay,
-      b.total > 0 ? `${Math.round((b.occupied / b.total) * 100)}%` : '0%',
-    ]);
-    exportCSV('Hospital_Bed_Inventory.csv', headers, rows);
+    exportCSV('Hospital_Bed_Inventory.csv',
+      ['Bed Category', 'Total Capacity', 'Occupied Beds', 'Available Beds', 'Price Per Day (INR)', 'Occupancy Rate (%)'],
+      beds.map((b) => [b.type, b.total, b.occupied, Math.max(0, b.total - b.occupied), b.pricePerDay, b.total > 0 ? `${Math.round((b.occupied / b.total) * 100)}%` : '0%'])
+    );
   };
 
   const exportBookingsToCSV = () => {
-    const headers = ['Patient ID', 'Patient Name', 'Phone', 'Bed Type', 'Status', 'Submitted Date'];
-    const rows = bookings.map((b) => [
-      b.uniquePatientId || b.patientId?.patientIdCode || 'PAT-2026-9842',
-      b.patientName,
-      b.patientPhone,
-      b.bedType,
-      b.status,
-      new Date(b.createdAt).toLocaleString(),
-    ]);
-    exportCSV('Patient_Admission_Requests.csv', headers, rows);
+    exportCSV('Patient_Admission_Requests.csv',
+      ['Patient ID', 'Patient Name', 'Phone', 'Bed Type', 'Status', 'Submitted Date'],
+      bookings.map((b) => [b.uniquePatientId || b.patientId?.patientIdCode || '—', b.patientName, b.patientPhone, b.bedType, b.status, new Date(b.createdAt).toLocaleString()])
+    );
   };
 
-  // Form states for Bed Upsert
   const [editingBed, setEditingBed] = useState(null);
   const [bedForm, setBedForm] = useState({ type: 'General', total: 20, occupied: 10, pricePerDay: 1500 });
   const [bedModalOpen, setBedModalOpen] = useState(false);
-
-  // Form states for Vaccine Upsert
   const [vaccineForm, setVaccineForm] = useState({ name: '', quantity: 50, price: 500 });
   const [vaccineModalOpen, setVaccineModalOpen] = useState(false);
 
-  // Per-admin hospital data — keyed by email
-  const HOSPITAL_DATA = {
-    'admin@rubyhall.com': {
-      hospital: { name: 'Ruby Hall Clinic Super Speciality', address: '40 Sasoon Road, Sangamvadi, Pune', city: 'Pune' },
-      beds: [
-        { _id: 'b1', type: 'General',    total: 40, occupied: 28, pricePerDay: 1500 },
-        { _id: 'b2', type: 'Oxygen',     total: 25, occupied: 19, pricePerDay: 2800 },
-        { _id: 'b3', type: 'ICU',        total: 15, occupied: 12, pricePerDay: 6500 },
-        { _id: 'b4', type: 'Ventilator', total: 8,  occupied: 5,  pricePerDay: 9500 },
-      ],
-      vaccines: [
-        { _id: 'v1', name: 'Covishield', quantity: 150, price: 780  },
-        { _id: 'v2', name: 'Covaxin',    quantity: 90,  price: 1200 },
-        { _id: 'v3', name: 'Corbevax',   quantity: 60,  price: 400  },
-      ],
-      forecast: { predictedPeakDay: 'Day 5', utilizationRisk: 'HIGH',
-        historical: [{ day: 'Day -6', demand: 52 }, { day: 'Day -5', demand: 58 }, { day: 'Day -4', demand: 61 }, { day: 'Day -3', demand: 55 }, { day: 'Day -2', demand: 67 }, { day: 'Day -1', demand: 72 }, { day: 'Today', demand: 64 }],
-        forecast: [{ day: '1', projectedDemand: 70, capacity: 88 }, { day: '2', projectedDemand: 75, capacity: 88 }, { day: '3', projectedDemand: 79, capacity: 88 }, { day: '4', projectedDemand: 83, capacity: 88 }, { day: '5', projectedDemand: 91, capacity: 88 }, { day: '6', projectedDemand: 86, capacity: 88 }, { day: '7', projectedDemand: 80, capacity: 88 }],
-      },
-    },
-    'admin@sahyadri.com': {
-      hospital: { name: 'Sahyadri Super Speciality Hospital', address: 'Plot 30, Erandwane, Deccan, Pune', city: 'Pune' },
-      beds: [
-        { _id: 'b5', type: 'General',    total: 50, occupied: 45, pricePerDay: 1200 },
-        { _id: 'b6', type: 'Oxygen',     total: 30, occupied: 22, pricePerDay: 2400 },
-        { _id: 'b7', type: 'ICU',        total: 10, occupied: 9,  pricePerDay: 7000 },
-        { _id: 'b8', type: 'Ventilator', total: 6,  occupied: 6,  pricePerDay: 10500 },
-      ],
-      vaccines: [
-        { _id: 'v4', name: 'Covaxin',    quantity: 200, price: 1200 },
-        { _id: 'v5', name: 'Influenza',  quantity: 80,  price: 600  },
-      ],
-      forecast: { predictedPeakDay: 'Day 3', utilizationRisk: 'HIGH',
-        historical: [{ day: 'Day -6', demand: 68 }, { day: 'Day -5', demand: 72 }, { day: 'Day -4', demand: 75 }, { day: 'Day -3', demand: 70 }, { day: 'Day -2', demand: 80 }, { day: 'Day -1', demand: 85 }, { day: 'Today', demand: 82 }],
-        forecast: [{ day: '1', projectedDemand: 85, capacity: 96 }, { day: '2', projectedDemand: 88, capacity: 96 }, { day: '3', projectedDemand: 95, capacity: 96 }, { day: '4', projectedDemand: 90, capacity: 96 }, { day: '5', projectedDemand: 84, capacity: 96 }, { day: '6', projectedDemand: 78, capacity: 96 }, { day: '7', projectedDemand: 72, capacity: 96 }],
-      },
-    },
-    'admin@manipal.com': {
-      hospital: { name: 'Manipal Hospital Critical Care', address: 'Zensar IT Park Road, Kharadi, Pune', city: 'Pune' },
-      beds: [
-        { _id: 'b9',  type: 'General',    total: 35, occupied: 15, pricePerDay: 1800 },
-        { _id: 'b10', type: 'Oxygen',     total: 20, occupied: 8,  pricePerDay: 3000 },
-        { _id: 'b11', type: 'ICU',        total: 12, occupied: 4,  pricePerDay: 6000 },
-        { _id: 'b12', type: 'Ventilator', total: 5,  occupied: 1,  pricePerDay: 9000 },
-      ],
-      vaccines: [
-        { _id: 'v6', name: 'Covishield', quantity: 120, price: 780 },
-        { _id: 'v7', name: 'Corbevax',   quantity: 90,  price: 400 },
-        { _id: 'v8', name: 'Rotavac',    quantity: 45,  price: 950 },
-      ],
-      forecast: { predictedPeakDay: 'Day 6', utilizationRisk: 'LOW',
-        historical: [{ day: 'Day -6', demand: 30 }, { day: 'Day -5', demand: 35 }, { day: 'Day -4', demand: 32 }, { day: 'Day -3', demand: 28 }, { day: 'Day -2', demand: 33 }, { day: 'Day -1', demand: 38 }, { day: 'Today', demand: 28 }],
-        forecast: [{ day: '1', projectedDemand: 32, capacity: 72 }, { day: '2', projectedDemand: 35, capacity: 72 }, { day: '3', projectedDemand: 38, capacity: 72 }, { day: '4', projectedDemand: 40, capacity: 72 }, { day: '5', projectedDemand: 42, capacity: 72 }, { day: '6', projectedDemand: 45, capacity: 72 }, { day: '7', projectedDemand: 41, capacity: 72 }],
-      },
-    },
-  };
-
-  // Build hospital data from user's own registration info (for newly signed-up admins)
-  // Beds start EMPTY so the admin fills them in themselves via the dashboard
-  const buildUserHospital = (u) => ({
-    hospital: {
-      name:    u.hospitalName || u.name || 'My Hospital',
-      address: u.address      || '',
-      city:    u.city         || '',
-    },
-    beds: [], // no pre-filled beds — admin adds via the UI
-    vaccines: [],
-    forecast: {
-      predictedPeakDay: 'N/A', utilizationRisk: 'LOW',
-      historical: [{ day: 'Day -6', demand: 0 }, { day: 'Day -5', demand: 0 }, { day: 'Day -4', demand: 0 }, { day: 'Day -3', demand: 0 }, { day: 'Day -2', demand: 0 }, { day: 'Day -1', demand: 0 }, { day: 'Today', demand: 0 }],
-      forecast:  [{ day: '1', projectedDemand: 0, capacity: 0 }, { day: '2', projectedDemand: 0, capacity: 0 }, { day: '3', projectedDemand: 0, capacity: 0 }, { day: '4', projectedDemand: 0, capacity: 0 }, { day: '5', projectedDemand: 0, capacity: 0 }, { day: '6', projectedDemand: 0, capacity: 0 }, { day: '7', projectedDemand: 0, capacity: 0 }],
-    },
-  });
-
-  // Pick data: preset email map first, then user's own registration data
-  const adminData = user
-    ? (HOSPITAL_DATA[user.email] || buildUserHospital(user))
-    : HOSPITAL_DATA['admin@rubyhall.com'];
-
-  // No pre-loaded fake bookings — starts empty, real bookings come from patients
-  const STATIC_BOOKINGS = [];
-
   useEffect(() => {
-    if (user && user.role === 'hospital_admin') {
-      fetchAdminData();
-    }
+    if (user && user.role === 'hospital_admin') fetchAdminData();
   }, [user]);
 
   useEffect(() => {
     if (lastBookingRequest) {
       setNewRequestAlert(true);
+      fetchBookings();
     }
   }, [lastBookingRequest]);
 
-  const fetchAdminData = () => {
+  const getHospitalId = () => user?.hospital?.id || user?.hospital?._id || null;
+
+  const fetchAdminData = async () => {
     setLoading(true);
-    setHospital(adminData.hospital);
-    setBeds(adminData.beds);
-    setVaccines(adminData.vaccines);
-    setBookings(STATIC_BOOKINGS);
-    setForecastData(adminData.forecast);
-    setLoading(false);
-  };
-
-  const handleBedSubmit = (e) => {
-    e.preventDefault();
-    if (editingBed) {
-      setBeds((prev) => prev.map((b) => b._id === editingBed._id ? { ...b, ...bedForm } : b));
-    } else {
-      setBeds((prev) => [...prev, { _id: 'b_' + Date.now(), ...bedForm }]);
-    }
-    setBedModalOpen(false);
-  };
-
-  const handleVaccineSubmit = (e) => {
-    e.preventDefault();
-    setVaccines((prev) => {
       const exists = prev.find((v) => v.name === vaccineForm.name);
       if (exists) return prev.map((v) => v.name === vaccineForm.name ? { ...v, ...vaccineForm } : v);
       return [...prev, { _id: 'v_' + Date.now(), ...vaccineForm }];

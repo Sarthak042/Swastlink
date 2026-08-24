@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { X, CheckCircle2, AlertCircle, Building2, User, Phone, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const API = 'https://swastlink-api.onrender.com/api';
+
 export default function BedRequestModal({ isOpen, onClose, hospital, onBookingSuccess }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [bedType, setBedType] = useState('General');
   const [patientName, setPatientName] = useState(user ? user.name : '');
   const [patientPhone, setPatientPhone] = useState('+91 ');
@@ -15,36 +17,38 @@ export default function BedRequestModal({ isOpen, onClose, hospital, onBookingSu
 
   const availableBeds = hospital.beds || [];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      setError('Please sign in or create a new account to submit a request.');
+    if (!user || !token) {
+      setError('Please sign in to submit a bed request.');
       return;
     }
-
     setLoading(true);
     setError('');
-
-    // Create booking locally — no backend needed
-    const booking = {
-      _id: 'bk_' + Date.now(),
-      uniquePatientId: 'PAT-2026-' + Math.floor(Math.random() * 9000 + 1000),
-      hospitalId: hospital._id,
-      hospitalName: hospital.name,
-      bedType,
-      patientName,
-      patientPhone,
-      notes,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      qrData: JSON.stringify({ hospital: hospital.name, bedType, patientName, patientPhone, ts: Date.now() }),
-    };
-
-    setTimeout(() => {
-      onBookingSuccess(booking);
+    try {
+      const res = await fetch(`${API}/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hospitalId: hospital._id,
+          bedType,
+          patientName,
+          patientPhone,
+          notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Booking failed');
+      onBookingSuccess(data.booking || data);
       onClose();
+    } catch (err) {
+      setError(err.message || 'Could not submit booking. Please try again.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
