@@ -8,6 +8,13 @@ import QRCodeModal from '../components/QRCodeModal';
 
 const API = 'https://swastlink-api.onrender.com/api';
 
+// ── Keep Render backend awake — ping every 10 minutes so it never sleeps ──────
+const keepAlive = () => {
+  fetch(`${API}/health`).catch(() => {}); // silent ping
+};
+setInterval(keepAlive, 10 * 60 * 1000); // every 10 minutes
+keepAlive(); // ping immediately on page load too
+
 export default function PatientDashboard({ onOpenSOSModal }) {
   const { user, token } = useAuth();
   const { lastInventoryUpdate, lastBookingStatusChange } = useSocket();
